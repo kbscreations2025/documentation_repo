@@ -1,0 +1,544 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Centralized Login — Developer Integration Guide</title>
+<style>
+  :root {
+    --bg: #f7f7f8;
+    --bg-elevated: #ffffff;
+    --bg-sunken: #f0f0f2;
+    --text: #1a1a1e;
+    --text-muted: #62626b;
+    --border: #e2e2e6;
+    --accent: #5b5bf0;
+    --accent-soft: #eeeeff;
+    --success: #1a8a4a;
+    --success-soft: #e7f7ee;
+    --danger: #c22b3d;
+    --danger-soft: #fbe9ec;
+    --warning: #b06a00;
+    --warning-soft: #fdf1e0;
+    --code-bg: #1e1e26;
+    --code-text: #e8e8ee;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #121214;
+      --bg-elevated: #1a1a1e;
+      --bg-sunken: #0d0d0f;
+      --text: #ececf0;
+      --text-muted: #9b9ba5;
+      --border: #2c2c32;
+      --accent: #8484ff;
+      --accent-soft: #23233a;
+      --success: #4ade80;
+      --success-soft: #12281c;
+      --danger: #f87171;
+      --danger-soft: #2c1518;
+      --warning: #fbbf24;
+      --warning-soft: #2c2210;
+      --code-bg: #0d0d0f;
+      --code-text: #e8e8ee;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font: 15px/1.6 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  }
+  a { color: var(--accent); }
+  .wrap { max-width: 860px; margin: 0 auto; padding: 40px 20px 100px; }
+  h1 { font-size: 26px; margin: 0 0 6px; }
+  h2 { font-size: 18px; margin: 0 0 10px; }
+  h3 { font-size: 15px; margin: 0 0 8px; font-family: ui-monospace, monospace; }
+  p.lede { color: var(--text-muted); margin: 0 0 28px; max-width: 640px; }
+  .card {
+    background: var(--bg-elevated);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px 22px;
+    margin-bottom: 20px;
+  }
+  .card p { color: var(--text-muted); font-size: 14px; margin: 0 0 12px; }
+  .card p:last-child { margin-bottom: 0; }
+  code {
+    background: var(--bg-sunken);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-family: ui-monospace, monospace;
+    font-size: 0.92em;
+  }
+  pre {
+    background: var(--code-bg);
+    color: var(--code-text);
+    padding: 14px 16px;
+    border-radius: 8px;
+    overflow-x: auto;
+    font-family: ui-monospace, monospace;
+    font-size: 13px;
+    line-height: 1.55;
+    margin: 0;
+  }
+  .picker {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  select {
+    padding: 8px 12px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--bg-sunken);
+    color: var(--text);
+    font-size: 14px;
+  }
+  .badge {
+    display: inline-block;
+    background: var(--accent-soft);
+    color: var(--accent);
+    font-size: 11px;
+    font-weight: 700;
+    padding: 3px 8px;
+    border-radius: 6px;
+    letter-spacing: 0.02em;
+  }
+  .endpoint-head { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; margin-top: 18px; }
+  .grid .label { font-size: 11px; font-weight: 700; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.03em; }
+  .label.ok { color: var(--success); }
+  .label.err { color: var(--danger); }
+  .label.warn { color: var(--warning); }
+  .toc { display: flex; flex-direction: column; gap: 8px; }
+  .toc a { text-decoration: none; font-size: 14px; }
+  .toc .path { font-family: ui-monospace, monospace; font-weight: 600; color: var(--text); }
+  .banner {
+    background: var(--accent-soft);
+    border: 1px solid var(--accent);
+    border-radius: 12px;
+    padding: 16px 20px;
+    margin-bottom: 24px;
+    font-size: 13.5px;
+    color: var(--text-muted);
+  }
+  .banner strong { color: var(--text); }
+  footer { color: var(--text-muted); font-size: 12.5px; margin-top: 40px; text-align: center; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Centralized Login — Developer Integration Guide</h1>
+  <p class="lede">
+    Everything an application developer needs to integrate against the central Auth Service.
+    Pick your application below to fill in its <code>client_id</code> in every example —
+    the <code>client_secret</code> is never shown here; ask your superadmin for it over a private channel.
+  </p>
+
+  <div class="banner">
+    <strong>No login required for this page</strong> — it's a static mirror of the Documentation
+    tab in the Superadmin dashboard, published so it can be shared with any developer directly.
+    Full interactive Swagger docs (needs no auth to view): <code id="swagger-link"></code>
+  </div>
+
+  <div class="card picker">
+    <div style="font-size:13px;font-weight:600;color:var(--text-muted)">Application:</div>
+    <select id="app-picker"></select>
+    <span class="badge" id="app-status" style="display:none"></span>
+  </div>
+  <p style="color:var(--text-muted);font-size:13px;margin:-8px 0 24px 2px" id="app-note"></p>
+
+  <div class="card">
+    <h2>1. Authenticate every request</h2>
+    <p>
+      Every call to <code>/api/v1/*</code> is made server-to-server from your application's own
+      backend and must carry these two headers. The response envelope is always
+      <code>{ status: "success" | "otp_required" | "error", ... }</code>, identical across every endpoint below.
+    </p>
+    <pre id="auth-headers"></pre>
+  </div>
+
+  <div class="card">
+    <h2>OTP is per-device, not per-login</h2>
+    <p>
+      Passwords never expire, and password alone never completes a login on a device that hasn't
+      proven itself yet. <code>verify-login</code> returns <code>otp_required</code> the first time
+      a device logs in — the superadmin reveals a fresh 6-digit code (valid 15 minutes) from the
+      Users tab and shares it with the user out-of-band, and your app calls <code>verify-otp</code>
+      to get tokens <em>and a <code>device_token</code></em>.
+    </p>
+    <p>
+      Store that <code>device_token</code> (alongside the access/refresh tokens) and send it back
+      on every future <code>verify-login</code> from that same device — the OTP step is skipped
+      entirely and tokens come back directly. A different device (browser, phone, cleared storage
+      — anywhere that doesn't have this exact token) always gets challenged fresh. Calling
+      <code>logout</code> revokes that device's trust too, not just the session — it's "forget this
+      device," so the next login (even the same device) needs a fresh OTP again.
+    </p>
+  </div>
+
+  <div class="card">
+    <h2>Concurrent-login limit (default 1 per app)</h2>
+    <p>
+      Every application has a <code>max_active_sessions</code> setting, configurable per app from
+      the Applications tab, default <strong>1</strong>. If a user already has that many active
+      sessions on an app and completes another login, the API does <em>not</em> silently sign out
+      the older session — it returns <code>{ status: "session_limit_reached" }</code> with the
+      existing session(s)' IP address, browser, and login time. On a brand-new device this is
+      checked right after the password is validated, <em>before</em> an OTP is generated or
+      emailed, so a blocked device finds out immediately.
+    </p>
+    <p>
+      Your screen for this needs to: (1) detect this shape instead of treating it as a plain
+      error, (2) show the existing session(s), ideally with a checkbox per session, (3) resend the
+      <em>exact same request</em> with either <code>force_logout_others: true</code> (kills every
+      blocking session) or <code>logout_session_ids: [...]</code> (kills only the ones selected —
+      for a limit above 1) to proceed, and (4) if the user cancels, just discard the response —
+      nothing changed server-side.
+    </p>
+    <p>
+      A blocked <code>verify-otp</code> attempt does not consume the OTP, so a confirmed retry
+      reuses the same code.
+    </p>
+  </div>
+
+  <div class="card">
+    <h2>Test users (time-boxed access)</h2>
+    <p>
+      A user can be marked as a test user with an access-end date (a day, not an exact time —
+      access runs through the end of that day UTC). Past that date, <code>verify-login</code> and
+      <code>verify-otp</code> return
+      <code>{ status: "error", message: "test access has expired, contact your superadmin" }</code>
+      instead of tokens.
+    </p>
+    <p>
+      An access token issued <em>before</em> expiry keeps working until its own ~15-minute
+      lifetime ends — the next <code>refresh-token</code> call after that is what actually tears
+      the session down.
+    </p>
+  </div>
+
+  <div class="card">
+    <h2>Keeping users signed in (read this before you ship)</h2>
+    <p>
+      "Session stays valid until logout" only happens if <em>your</em> backend actually implements
+      the refresh call. The access token expires in 15 minutes; every protected request your
+      backend makes needs to catch a 401, exchange the <code>refresh_token</code> for a new
+      <code>access_token</code>, and retry once. Skipping this is the single most common
+      integration bug.
+    </p>
+    <pre>async function callWithAutoRefresh(accessToken, refreshToken, doRequest) {
+  try {
+    return await doRequest(accessToken);
+  } catch (err) {
+    if (err.status !== 401) throw err;
+
+    const refreshed = await fetch("<span id="base-1"></span>/api/v1/refresh-token", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Client-Id": "<span id="cid-1"></span>",
+        "X-Client-Secret": "&lt;client_secret&gt;",
+      },
+      body: JSON.stringify({ refresh_token: refreshToken }),
+    }).then((r) =&gt; r.json());
+
+    if (refreshed.status !== "success") {
+      throw new Error("session ended, please log in again");
+    }
+
+    return await doRequest(refreshed.access_token);
+  }
+}</pre>
+    <p style="margin-top:14px">
+      Store <code>access_token</code>, <code>refresh_token</code>, <strong>and</strong>
+      <code>device_token</code> from <code>verify-otp</code> — only keeping the access token is
+      what makes sessions expire in 15 minutes no matter what.
+    </p>
+  </div>
+
+  <div class="card">
+    <h2>If you use cookies + server-side route protection, refresh there too</h2>
+    <p>
+      A guard that only checks "is the access-token cookie present?" will bounce users to a full
+      login screen every time the access token's normal short lifetime runs out, even though the
+      refresh_token (valid for years) is still perfectly good. Missing access token
+      <strong>≠</strong> logged out; only a failed refresh is a real logout.
+    </p>
+    <pre>async function guardRoute(request) {
+  let accessToken = request.cookies.get("access_token");
+
+  if (!accessToken) {
+    const refreshToken = request.cookies.get("refresh_token");
+    if (refreshToken) {
+      const refreshed = await callYourOwnRefreshEndpoint(refreshToken);
+      if (refreshed.status === "success") {
+        accessToken = refreshed.access_token;
+      }
+    }
+  }
+
+  if (!accessToken) return redirectToLogin();
+  return allowRequestThrough(accessToken);
+}</pre>
+    <p style="margin-top:14px">
+      Pure client-side SPAs storing tokens in <code>localStorage</code> (no server-side route
+      guard) don't have this problem.
+    </p>
+  </div>
+
+  <div class="card">
+    <h2>2. The endpoints</h2>
+    <div class="toc" id="endpoint-toc"></div>
+  </div>
+
+  <div id="endpoint-details"></div>
+
+  <footer>Centralized Login &amp; Access Management — internal developer documentation.</footer>
+</div>
+
+<script>
+// Client IDs are not secret — safe to publish. client_secret never appears here.
+// To add a newly registered application, append it to this array and republish.
+const APPS = [
+  { name: "Select+Clarity", code: "SLCL", client_id: "cid_018193abac7e2cbc", status: "active" },
+  { name: "sparkle", code: "SPARKLE", client_id: "cid_238dcdd10105b430", status: "active" },
+  { name: "Kbs Utilities", code: "KBS_UTILITIES", client_id: "cid_adca24ab4ea3faf1", status: "active" },
+  { name: "Select", code: "SELECT", client_id: "cid_77234b538f737048", status: "active" },
+];
+
+const AUTH_API_BASE = "https://centralized-login-backend.onrender.com";
+
+const ENDPOINTS = [
+  {
+    method: "POST",
+    path: "/api/v1/verify-login",
+    purpose: "Validate a user's email + password. On a NEW device, returns otp_required — pass the OTP to verify-otp below to complete the login and get tokens (plus a device_token). On a device that already has a valid device_token from a prior verify-otp, send it here and skip the OTP step entirely — tokens come back directly. EITHER path can instead return session_limit_reached if the app's concurrent-login limit is already reached — checked BEFORE an OTP is generated or emailed on the new-device path. Resend with force_logout_others: true or logout_session_ids: [...] to proceed.",
+    input: `{
+  "email": "user@example.com",
+  "password": "their-password",
+  "device_token": "<optional — omit on a new device>",
+  "force_logout_others": false,
+  "logout_session_ids": []
+}`,
+    success: `{
+  "status": "otp_required",
+  "message": "an OTP is required to complete this login — ask your superadmin for the code",
+  "otp_expires_at": "2026-08-27T07:28:23.191698Z"
+}`,
+    error: `{
+  "status": "error",
+  "message": "invalid email or password"
+}`,
+    extra: {
+      label: "Success — recognized device_token (skips OTP)",
+      json: `{
+  "status": "success",
+  "user": { "user_id": "6a855b1e2862a077b0ead259", "name": "Jane Doe", "email": "user@example.com", "role": "Team Mate", "permissions": ["invoice:read"] },
+  "access_token": "eyJhbGciOi...",
+  "refresh_token": "eyJhbGciOi...",
+  "permissioned_applications": [],
+  "device_token": null
+}
+
+// OR, on EITHER path, if the concurrent-login limit is already reached (default 1):
+{
+  "status": "session_limit_reached",
+  "message": "you're already logged in elsewhere on this application — log out there and try again to continue here",
+  "max_active_sessions": 1,
+  "active_sessions": [
+    { "session_id": "...", "ip_address": "203.0.113.4", "user_agent": "Mozilla/5.0 ...", "created_at": "2026-09-05T10:00:00Z" }
+  ]
+}`,
+    },
+  },
+  {
+    method: "POST",
+    path: "/api/v1/verify-otp",
+    purpose: "Complete the login started by verify-login by submitting the OTP. The OTP is generated by verify-login and shared with the user by their superadmin — never sent by this API to anyone. Correct OTP returns tokens plus a NEW device_token — store it so this device can skip OTP in the future. If the concurrent-login limit is already reached, this returns session_limit_reached instead and the OTP is NOT consumed.",
+    input: `{
+  "email": "user@example.com",
+  "otp": "926563",
+  "force_logout_others": false,
+  "logout_session_ids": []
+}`,
+    success: `{
+  "status": "success",
+  "user": { "user_id": "6a855b1e2862a077b0ead259", "name": "Jane Doe", "email": "user@example.com", "role": "Team Mate", "permissions": ["invoice:read"] },
+  "access_token": "eyJhbGciOi...",
+  "refresh_token": "eyJhbGciOi...",
+  "permissioned_applications": [],
+  "device_token": "x2Y5wvY4WqDLHwEPu_vSOOs8DctUM8DMkP8mbkBaVlM"
+}`,
+    error: `{
+  "status": "error",
+  "message": "invalid or expired OTP"
+}`,
+  },
+  {
+    method: "POST",
+    path: "/api/v1/verify-token",
+    purpose: "Validate an access_token on protected requests. Returns user_id, role, and permissions.",
+    input: `{
+  "access_token": "eyJhbGciOi..."
+}`,
+    success: `{
+  "status": "success",
+  "user_id": "6a855b1e2862a077b0ead259",
+  "role": "Team Mate",
+  "permissions": ["invoice:read"],
+  "permissioned_applications": [
+    { "app_id": "6a8565cc098537fcdf172ab7", "name": "Select", "code": "SELECT", "role": "Team Mate" },
+    { "app_id": "6a8566aa098537fcdf172ac1", "name": "Clarity", "code": "CLARITY", "role": "Viewer" }
+  ]
+}`,
+    error: `{
+  "status": "error",
+  "message": "invalid or expired access token"
+}`,
+  },
+  {
+    method: "POST",
+    path: "/api/v1/refresh-token",
+    purpose: "Exchange a refresh_token for a new access_token without asking the user to log in again. Refresh tokens don't expire on a schedule — they stay valid until the user logs out, is deactivated, or is deleted by the superadmin.",
+    input: `{
+  "refresh_token": "eyJhbGciOi..."
+}`,
+    success: `{
+  "status": "success",
+  "access_token": "eyJhbGciOi..."
+}`,
+    error: `{
+  "status": "error",
+  "message": "access no longer valid"
+}`,
+  },
+  {
+    method: "POST",
+    path: "/api/v1/logout",
+    purpose: "Explicitly end a session — deletes the server-side record backing this refresh_token so it can never be exchanged again. Also revokes every trusted device for this user on this app, so the next login anywhere requires a fresh OTP again — only call this on an actual user-initiated sign-out.",
+    input: `{
+  "refresh_token": "eyJhbGciOi..."
+}`,
+    success: `{
+  "status": "success"
+}`,
+    error: `{
+  "status": "success"
+}`,
+  },
+  {
+    method: "GET",
+    path: "/api/v1/app-users",
+    purpose: "Every user registered (granted access) to YOUR application — identified purely by the X-Client-Id/X-Client-Secret headers, no app_id parameter, so you can only ever see your own users, never another app's. Each entry includes the user's department and the role/permissions for THIS app specifically.",
+    input: "",
+    success: `{
+  "status": "success",
+  "users": [
+    {
+      "user_id": "6a858c8b52122ad2afac2905",
+      "name": "Jane Doe",
+      "email": "jane@example.com",
+      "department": "Engineering",
+      "status": "active",
+      "is_test_user": false,
+      "test_access_expires_at": null,
+      "role": "App Admin",
+      "permissions": ["*"],
+      "granted_at": "2026-08-19T11:18:21.611Z"
+    }
+  ]
+}`,
+    error: `{
+  "detail": "invalid client credentials"
+}`,
+  },
+];
+
+function escapeHtml(s) {
+  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+
+function curlFor(e, clientId) {
+  const body = e.input.trim()
+    ? ` \\\n  -d '${e.input.replace(/\s+/g, " ").trim()}'`
+    : "";
+  return `curl -X ${e.method} ${AUTH_API_BASE}${e.path} \\
+  -H "Content-Type: application/json" \\
+  -H "X-Client-Id: ${clientId}" \\
+  -H "X-Client-Secret: <client_secret>"${body}`;
+}
+
+function render() {
+  const picker = document.getElementById("app-picker");
+  const idx = picker.value;
+  const app = APPS[idx];
+  const clientId = app ? app.client_id : "<client_id>";
+
+  document.getElementById("swagger-link").textContent = `${AUTH_API_BASE}/docs`;
+  document.getElementById("auth-headers").textContent =
+    `X-Client-Id: ${clientId}\nX-Client-Secret: <client_secret>`;
+
+  document.getElementById("base-1").textContent = AUTH_API_BASE;
+  document.getElementById("cid-1").textContent = clientId;
+
+  const statusEl = document.getElementById("app-status");
+  if (app) {
+    statusEl.style.display = "inline-block";
+    statusEl.textContent = app.status;
+  } else {
+    statusEl.style.display = "none";
+  }
+
+  document.getElementById("app-note").textContent = app
+    ? `client_id ${clientId} is filled into the examples below. The client_secret is never shown here — ask your superadmin for it over a private channel.`
+    : "";
+
+  const toc = document.getElementById("endpoint-toc");
+  toc.innerHTML = "";
+  ENDPOINTS.forEach((e) => {
+    const a = document.createElement("a");
+    a.href = `#ep-${e.path.replace(/\W+/g, "-")}`;
+    a.innerHTML = `<span class="badge">${e.method}</span> <span class="path">${e.path}</span>`;
+    toc.appendChild(a);
+  });
+
+  const details = document.getElementById("endpoint-details");
+  details.innerHTML = "";
+  ENDPOINTS.forEach((e) => {
+    const card = document.createElement("div");
+    card.className = "card";
+    card.id = `ep-${e.path.replace(/\W+/g, "-")}`;
+    card.innerHTML = `
+      <div class="endpoint-head">
+        <span class="badge">${e.method}</span>
+        <h3>${e.path}</h3>
+      </div>
+      <p>${escapeHtml(e.purpose)}</p>
+      <div class="label" style="color:var(--text-muted)">Request (curl)</div>
+      <pre>${escapeHtml(curlFor(e, clientId))}</pre>
+      <div class="grid">
+        ${e.input.trim() ? `<div><div class="label" style="color:var(--accent)">Input (body)</div><pre>${escapeHtml(e.input)}</pre></div>` : ""}
+        <div><div class="label ok">Output — success</div><pre>${escapeHtml(e.success)}</pre></div>
+        <div><div class="label err">Output — error</div><pre>${escapeHtml(e.error)}</pre></div>
+        ${e.extra ? `<div><div class="label warn">${escapeHtml(e.extra.label)}</div><pre>${escapeHtml(e.extra.json)}</pre></div>` : ""}
+      </div>
+    `;
+    details.appendChild(card);
+  });
+}
+
+APPS.forEach((a, i) => {
+  const opt = document.createElement("option");
+  opt.value = i;
+  opt.textContent = `${a.name} (${a.code})`;
+  document.getElementById("app-picker").appendChild(opt);
+});
+document.getElementById("app-picker").addEventListener("change", render);
+render();
+</script>
+</body>
+</html>
